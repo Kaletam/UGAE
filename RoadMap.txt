@@ -1,0 +1,230 @@
+Ported from my OneNote notebook on the project.
+
+---
+
+Overview:
+
+UGAE: Universal Genetic Algorithm Engine
+	… Or, at least, an engine if I manage to figure out how to make one. :3
+	Otherwise, it was just going to be "UGA".
+
+Goal:
+	Implement a genetic algorithm system (? Setup? Engine? Thingy?) for general (universal) problem solving.
+	
+	My immediate interest lies in deriving an equation (or equations! Argh) from CivWorld. Specifically, determining the relation(s) between resources, resource buildings, workers, and distances, in order to optimize city setup. (Yes, I'm a geek.)
+	
+	My general interest lies in creating a generalized GA for universal solutions. Pop in parameters, solve an equation. Pop in data points, create an equation. And so on.
+	
+	Ideally, I do want to allow for systems of equations (thinking about it, I suppose this would make use of a multi-chromosomal organism - each chromosome represents one or more equations?).
+	
+	I'd like to build in open-ended evolution: the ability for genes to be interpreted by the organism (or chromosome) in novel ways. Depending on how this is realized - and if it's done well enough - this could allow for the evolution of functions, proofs, or whatever. It might also enable the ability for the GA to handle infinities, etc? Although infinities are likely to be coded in… Dunno.
+
+---
+
+Roadmap/Version Map
+
+0.0: Proof of Concept
+	Ad hoc coding.
+	Basic data types.
+		Genes - enum representation of numerals (decimal format), operators.
+			This might be retained in its current state, probably renamed (GeneValues?), because this limits us to integers (maybe? Probably?), and might just complicate things. On the other hand, this is robust enough to represent compound values, while not ruling out the ability to represent non-integer data types.
+			
+			Specifically, though, Genes are likely to be refactored to a class (28-Jun-11, 5:01 PM I've done just this), with the current implementation renamed to GeneValues (or the like). I decided that a possible solution to the parenthesis problem might be to give each gene a "range" value: a gene will represent a number or an operator (or?), and, at least in the case of a operator, will also represent a range. That is, the range of an operator is the number of numerals operated upon.
+				(I just realized some complications with this approach. If it's generalized to numbers and operators, or just to numbers, that might make more sense… maybe. This isn't simple, regardless. But it's probably a better approach than coding in parentheses separately.)
+				
+				28-Jun-11, 5:01 PM I have yet to address the matter of range/parenthetical precedence.
+		Chromosome
+			This isn't a discrete data type - rather, it's implemented as an ArrayList. The ArrayList is populated with Genes, which are then interpreted as typographical values, which are then evaluated (after being parsed for invalid structure).
+			
+			In the future - aka, next version! - it'll be useful to have these as a discrete data type (structure? Class? Review the differences and merits!), partly for membership in an Organism, partly for processing and handling, etc. Quite a few aspects of the Chromosome will be simplified and aided (or made possible at all!) by OOPing it.
+			
+			28-Jun-11, 5:02 PM This is indeed a class now.
+		Organism
+			Not exactly present. Current implementation has 16 Chromosomes. This could be considered 16 Organisms, or a single Organism with 16 Chromosomes, etc. Doesn't matter at the moment.
+			
+			But for the actual evolution aspects - and in particular, for systems, or anything more complex than simply solving, straightforwardly, a single problem - an Organism class will be valuable.
+			
+			28-Jun-11, 5:02 PM Not yet implemented. I may actually push this off.
+	Evaluation
+		CSEval, a library I dug up on the web, is handy for the evaluation of Chromosomes. Actually calculating the values of the Chromosomes is non-trivial, I think - I'd have to implement a subset of the language/CLR to do so properly. Creating - by mapping Gene values onto typographical symbols - actual C#-valid statements and evaluating them is trivial!
+		
+		I'm uncertain as to whether Chromosomes or Organisms will be the primary means of evaluation. I presume Chromosomes will have a method (or three) to evaluate themselves, while the Organism will call this method and possibly do something with the results (if only exposing them to the Engine). But an Organism may also have a higher level evaluation, for systems, or what have you.
+		
+		28-Jun-11, 5:02 PM I keep needing to expand the way the Chromosomal string is parsed and validated, as I add complexity of representation (variables for example - and I have yet to implement constants, or functions, or ranges). Unforeseen issues also arise (Chromosome strings that involve a substring of numerals that evaluate to larger than int can handle).
+	Current Implementation
+		I took an ArrayList to serve as a Chromosome (and an ArrayList[] to serve as Chromosomes/Organism). I populate that with Genes, randomly selected, with a random size of 3-16 (I was briefly amused at Chromosomes being generated with 0 elements). These Chromosomes are mapped to a string - Genes.One is mapped to "1", etc. These string representations of the Chromosome are then processed for validity - doubled operators are purged (although ** is valid, and O+ and O- are valid, etc), all trailing operators are trimmed, and leading binary operators are also trimmed. Once the string is validated - and valid - we evaluate it using CSEval.
+		
+		In the process, we print out the raw representation of the Chromosome (that is, before processing), the validated representation of the Chromosome, and what the Chromosome evaluates to.
+		
+		This is as far as the code currently goes. We don't evaluate fitness - for we don't have any goals (or environmental pressures, or selection, or…). We don't mate (or clone) Chromosomes. We don't run crossovers or even mutations. There's no means of specifying constraints/values/desired results/equations to solve. … those come in the next versions (or, anyway, somewhere after 0.1).
+0.1: Genetics
+	Data Types
+		Gene
+			Our basic unit of information (I think… Genes contain multiple data pieces, but those may not be fundamental for our purposes).
+			
+			Represents numerals (or numbers, perhaps), operators, eventually constants and variables alike, possibly functions, maybe metadata (if not directly, then perhaps in non-coding Chromosomes/sections thereof).
+			
+			Are operated upon in the evaluation of Chromosomes, and otherwise in mutation events.
+			
+			It's possible - though unlikely for this implementation (ie, this entire project, or at least until 1.0 or so) - that basic program flow/decision making/iteration will be added. At the very least, something like this to account for summation, product operators, and integration/differentiation might be handy/desirable/needed.
+			
+			Methods of this class will at least involve classification of Gene types - operators, numerals, etc - for the process of evaluation, and probably statistics and such.
+			
+			How we'll account for real numbers - and transcendentals! - I'm not sure. Pi, e, phi, c, etc, are likely to be represented by a constant Gene value (though whether each constant, and there could be lots, will be discretely represented, or as a sub-value of a generic CONSTANT value, not sure). Since we'll eventually build in "operators" (functions, but used like any other operator… I guess?) such as square roots, we can always calculate some constants on the fly, but…
+			
+			28-Jun-11, 4:58 PM On this matter, actually, there's an "issue" with operations like "7/5" in evaluation - integer division is used, so that evaluates to "1". This is annoying for a few reasons - fractions would allow the use of real numbers (albeit clumsily), and requires a workaround to force real division (either including a cast to double, or marking numbers that are otherwise integral with a ".0", both of which involve parsing the string further before evaluation).
+			
+			(Will representing constants such as the square root of two as a discrete constant value, as opposed to requiring its evaluation as sqrt(2), using at least two discrete values, have an effect on evolution? Will this bias solutions toward sqrt2 instead of sqrt(3)? Meh!)
+			
+			24-Jun-11, 2:42 AM
+				Played with variables (and constants, a little).
+				
+				Works - if I specify .X and friends as properties of Chromosome. Not handy, unless I want to hard-code in every variables conceivable.
+				
+				(28-Jun-11, 4:56 PM This is a result of the way CSEval works. It uses - an instanced - environment in which to operate. I have some ideas on how to fix this, including Reflection below, but also an idea on how to work around the environment (probably an evaluation helper class that wraps the variables necessary, so that, among other things, it could be used by a static class).)
+				
+				I think I may use Reflection to dynamically provide variable properties for Chromosome as its environment requires. That, or it'll need a "VariableList" member of some sort?
+				
+				Not sure how that will work with GeneVariables. If I want to add variable W to Chromosome, fine, I can use all the letters in the enum. But if I want to add "ResourceValue", for the sake of readability, that requires another approach entirely (Reflection on GeneVariables? Or most abstraction?).
+				
+				But variables do work in evaluation.
+				
+				42X will crash the parser - if we're to allow this syntax, it needs to be 42 * X, or the X needs to be stripped unless provided with an operator or two. (28-Jun-11, 4:56 PM  this is fixed as of the last day or three - nX is expanded to n*X)
+		Chromosome
+			The functional unit of information. Composed of more than zero Genes (currently, constrained to 3-16 Genes, but I suppose single-Gene Chromosomes should be allowed, at least). May or may not exist in isolation in a single Organism. May or may not be paired (or menaged, or?).
+			
+			For the immediate term, each Chromosome will be evaluated in a single unit - the entire Chromosome is read, translated, parsed, and evaluated. In the future, there may be a framework for a Chromosome to consist of multiple sets of "functional" Genes.
+			
+			(For the sake of realism, I'm actually abstracting things a layer downward. What I'm calling "Genes" are analogous to base pairs, mostly, while what I'm calling "Chromosomes" are analogous to genes. I may need to alter my terminology and code to make this less confusing, but it may do. The tricky part will be in referring to Chromosomes that consist of "Genes" but in fact represents just a single gene, or multiple genes (each of which is in fact composed of Genes…).
+			
+			Parsed and validated - ignoring segments that would choke the evaluator (that would, in fact, be invalid - what meaning would "1 +*/- 1" have?). These are not excised from the Chromosome - only from the eventual evaluation of the Chromosome. This should allow for "benign" mutations that, over time, might well greatly affect the population (or maybe just bloat it - but one selection parameter, optionally, will be Chromosome length, so - we'll do this primarily so we don't have the desired value of 3, for example, represented by "1 + 1 + 1", or worse, but rather by "2 + 1", or simply, "3").
+			
+0.2: Change
+	Genetic Operators
+		In this version, we'll implement some fundamental genetic operators, core to the very idea of evolution!
+		
+		Originally the list was solely crossover and mutation - but insertion and deletion, at least, are also rather handy, and we may go beyond that (the rare chance of a merger/split in chromosomes, appending a segment of one chromosome to another, whatever).
+		
+		Without Organisms - which we'll introduce in 0.4 - this'll be quite simple. But we'll build in a framework for basic mating and, etc.
+		
+		We won't actually use this to any productive end, yet. We'll just have fun with genetics.
+		
+		A possible implementation of (simple) crossover (I don't think it's robust enough):
+		
+        private void Crossover(Random rand, TextMatchGenome p1, TextMatchGenome p2, out TextMatchGenome child1, out TextMatchGenome child2) 
+        { 
+            int crossoverPoint = rand.Next(1, p1.Text.Length); 
+            child1 = new TextMatchGenome { Text = p1.Text.Substring(0, crossoverPoint) + p2.Text.Substring(crossoverPoint), TargetText = _targetText }; 
+            child2 = new TextMatchGenome { Text = p2.Text.Substring(0, crossoverPoint) + p1.Text.Substring(crossoverPoint), TargetText = _targetText }; 
+        } 
+		
+		Pasted from <http://code.msdn.microsoft.com/ShakespeareanMonkeys-b6d3ac50/sourcecode?fileId=19347&pathId=316211476> 
+		
+		An implementation of mutation from the same source, that I don't care for:
+		
+		        private void Mutate(Random rand, ref TextMatchGenome genome) 
+        { 
+            var sb = new StringBuilder(genome.Text); 
+            sb[rand.Next(0, genome.Text.Length)] = _validChars[rand.Next(0, _validChars.Length)]; 
+            genome.Text = sb.ToString(); 
+        } 
+		
+		Pasted from <http://code.msdn.microsoft.com/ShakespeareanMonkeys-b6d3ac50/sourcecode?fileId=19347&pathId=316211476> 
+		
+		(Why do we use a StringBuilder? I thought we could change individual elements of a string, just not the string itself. Anyway, we'll look into ideal implementation.)
+		
+		28-Jun-11, 5:04 PM These are fully implemented as of now. Mutation, insertion, deletion (and also the addition of swapping - swapping two Genes in a Chromosome) are trivial (though I could expand upon them by allowing for multiple mutations/etc in a single operation, or specific types of mutations or insertions). Crossover gave me trouble implementing, but using a cut and snip implementation, along with some mechanisms to guard against 0-length Chromosomes/etc, seem to handle things nicely.
+0.3: Evaluation
+	Here we'll do something with evaluation. This confuses me. I drew this at 0.2, moved it to 0.3, but it strikes me that this should be 0.2, and Change should be 0.3. Maybe. There's sense in just implementing basic genetic operators, operating upon the Chromosomes, and then worrying about how to actually evaluate these results later. … so we'll keep this as is for now.
+	
+	This is simple™. Most of the evaluation process is built already (some of which is outsourced). But the genetic operators may require further validation, etc. I dunno if we want to add more genes in this step, such as STOP operators, or JUMPs, or… whatever.
+	
+	This step might also involve modifications to the underlying Gene system. For validation, do we want to hard code in validation rules (relating to the order in which doubled operators are purged, for example), hard code in the ability to choose validation rules, or do we want control genes to choose this on a per Organism or per Chromosome (or even per Gene) basis? Considerations.
+	
+	This might also impact the way in which we process unary operators (apart from negation, which has a very necessary role).
+	
+	We might even allow for a control mechanism that purges invalid genes in reproduction/recombination/whatever.
+	
+	If this doesn't exist previously, I believe we'll add in to the Chromosome class a method/field that stores its evaluated representation/value (value dependent upon the presence of variables or modified external constants).
+	
+	28-Jun-11, 5:07 PM As noted above, this has had added complications as, well, I add complexity. Not surprising. I still need to add fixes for too-big-for-int integers, real division (as per 7/5), the representation (and hence evaluation) of reals, etc.
+0.4: Organism
+	Chromosomes and Genes are good and all, but they need a delivery mechanism.
+	
+	And so enters the Organism.
+	
+	For now, Organisms will tend to consist of a single Chromosome, but the ability to possess multiple - or pairs, etc - of Chromosomes will be built in.
+	
+	While evaluations and genetic operators, etc, will be built into Chromosomes, higher level variants will be built into Organism - for individual evaluation, etc, and for collective evaluation, and of course, for reproduction (whether asexual or not - and both will be built in).
+	
+	At this level, we'll also allow for individual finetuning of what will otherwise be environmental factors - perhaps an organism will have an individual level of mutagens, etc. If "food"/"energy" is implemented (perhaps we can do that through an extension?), that'll exist at this level.
+	
+	Gotta round this out.
+	
+	28-Jun-11, 5:10 PM I've skipped this for the time being. I need to consider whether an Organism class (or even Species class(es)) will be needed, and when to implement. So far, Chromosomes are successful for my needs, though I see the implementation of Organism handy for multi-Chromosomal problems.
+0.5: Basic Evolution
+	Here, with more or less fully rounded Organisms, Chromosomes, and Genes, we'll build in external factors and constraints, as well as fitness(es).
+	
+	To be continued.
+	
+	28-Jun-11, 5:11 PM I've done quite a bit with this already, though again I skipped 0.4 (although I haven't exactly versioned the program yet).
+		I started with a simple fitness function, taking the calculated result of the equation represented, and comparing it to the desired result. I added penalties and bonuses to the fitness according to various criteria (if an equation string doesn't include a subset of required variables, it's penalized, while if it contains one or more of those variables, it's rewarded; likewise, I penalize with non-useful constructions such as multiplication by zero or by one), and wound up with a useful fitness value.
+		
+		From there, I expanded the fitness function to iterate over a problem-set, which is simply the expansion of the previous fitness calculation - instead of simply taking a single variable (or set of variables) and a single expected value, I use a collection of sets. Each set of variables, one or more, has an expected value. The fitness is calculated for each set of variables, and the total fitness is the sum of each individual fitness calculation. The most fit Chromosome is the one that comes closest to the expected value for the most sets of variables: the "solution" is reached when the fitness for each set is minimized.
+		
+		There are some issues here. Selecting, by penalizing a Chromosome for length over the length of a "best previous Chromosome" leads to Chromosomes that are truncated by a past success: in solving for X*X+X, Chromosomes were unable to achieve the "+X" component, as X*X was a close approximation, and any Chromosome greater than length-3 was penalized. So even if shorter strings are desirable in many circumstances (simplification, reduction), selecting for them, or selecting for them too strongly, will make it nearly impossible for a better solution (or the solution) to be evolved.
+		
+		Likewise, being careless in the problem-set can lead to unexpected results: when solving for 1/X, I first included the result for X=0. When Chromosomes came up with solutions along the lines of /X, the fitness was calculated as Infinite, and translated to maxFitness (50,000 currently). This inhibited proper fitness calculation and solution evolution. Removing that case from the problem-set allowed the engine to correctly evolve the expected equation - so fitness needs to be adjusted in cases where the expected value is undefined or invalid.
+		
+		Additionally, solutions evolve haphazardly. For X^2 (X**2 in C# terms), the solution evolved is almost always X*X, never X**2. Similarly, X*2 seems to favor X+X over X*2. I understand why - fitness is biased toward the expected/needed variable being included in the string, and crossover favors the variable as being included multiple times in the string: the numeral 2 is not. A solution to this - since I want equations in their most reduced forms, with the least uses of any given variable - would be to penalize for the absence of any numerals, and/or for multiple occurrences of the same variable, or at least reward the inclusion of at least one numeral, and/or a single instance of a given variable.
+			(This isn't straightforward. Solving for X**2+X might well be hampered by the penalty against multiple instances of "X".)
+		
+		In the same vein, X/2 gave me solutions such as 4X/8. That reduces to the correct equation, but I want the engine to favor reduced equations. I might be able to do this by penalizing more expressed Genes (that is, validation-ready), but that again stands the risk of quadratic equations (for example) being inhibited. More likely, if once a probable solution is reached (say, 4X/8), I continue evolution but penalizing against the best-known actual solution, this might then result in the evolution of X/2 from 4X/8, etc.
+		
+		Thinking cleanup, too. Lot of testing code still left in that I likely won't use again. I might save a snapshot of the code to show where I've been (at least, where I've been that's still included in some form).
+		
+		Likewise, there's still some ad hoc stuff, and abstraction, I might do without.
+0.6: Dunno
+	I had thoughts on what these next two would be. I forgot them - and I didn't write them down, grr.
+	
+	28-Jun-11, 5:28 PM I think this shall become problem-sets.
+		Currently, problem-sets are implemented as a dictionary of dictionaries. Specifically, a Dictionary<string name, Dictionary<string variable, double value>>, in which name is the name of the "case", variable is the name of the variable (for now, "X" and so on), and value is the value of the variable… straightforward. In this set is also stored the expected value, which I'm currently implementing simply as another variable ("Y", for example). I'll likely start using something like "expectedValue" as the name of the… expected value.
+		
+		However, each one is manually constructed (granted, I'm using for loops to provide me with values for equations such as X^2, etc). More difficult is that the extraction of the values in the fitness function is manually adjusted - I need to tell it to take and use X, and have it ignore other values. Likewise, in rewarding or penalizing the presence of variables, or duplication of variables, I manually adjust the code.
+		
+		So I think I'll build in a ProblemSet class, to load and handle these details. How this is implemented for the program/UI may vary - instead of indicating a problem-set on the command line, it'll likely be limited to including a parameter that's the file name of a problem-set (or more than one?), or a GUI UI being told to load and run for a given problem-set.
+		
+		Not sure how I'll do this. Plain text? CSV? XAML? XML? In any case, it doesn't really matter the representation, though CSV may be most simple and most easily parsed (as otherwise plain text needs to indicate where one item begins and the other ends, which may not be trivial). Also, I should build in a default variable naming scheme, so that unless variables are named/specified in the problem-set file, values are systematically assigned to default variables (X, Y, Z). Even if variables are handled as single character names in equations, however, specifying variable names would simplify understanding the equations that result - so if I want to work on CivWorld, I'll specify that this column of values is ResourceValue, and however it's handled internally, it'll be reported to me (at will - so I can see the equation with X or ResourceValue) as such.
+		
+		Perhaps a problem-set editor in the GUI.
+0.7: Dunno
+	28-Jun-11, 5:37 PM Sooner or later, I want to be able to save and load populations, take snapshots of a run, and so on (genetic engineering, perhaps, seeding runs with known solutions to other problems as a form of bootstrapping, whatever).
+	
+	So, if I want to run a solution for a given equation, I can dump the equation, the problem-set, and the current population (and stats such as the best known Chromosome, etc, as well as time t) to file, and load it back up at will.
+0.8: ???
+	28-Jun-11, 5:39 PM I also want statistics, both for a given run, and probably for aggregation purposes (that is, if I want to compare solution times for a given equation as a function of starting/average Chromosome length - so, if I run X*2 multiple times, the best and worst solution times, average solution time, especially if I have it start with 4-length or 16-length Chromosomes, X-only or all variables, and so on).
+	
+	A further generalization would be to record stats for families of equations. ax^2+bx+c may well have the same general solution time regardless of a, b, c, but it might be fun to know that, and have hard data on it. If, say, solutions for three positive coefficients are shorter than solutions for two positive and one negative, or three negative, perhaps there's something I can improve, either in evaluation, fitness, or whatever.
+0.9: ???
+	28-Jun-11, 5:43 PM  Perhaps this is where I build in a GUI, or maybe that's 1.0.
+	
+	Especially in the case of the GUI, it might be nice to display graphs for individual Chromosomes, best known solution, best seen solutions, etc. For the final solution too, of course.
+	
+	This or next, it might be nice to have gotten to the point where I can setup problems such as the WOW one noted. Not rotations - that's far more complicated. But perhaps I can punch in values like Str, Agi, Int, Sta, Spi, character level, and the like, and have it solve for all derived values (HP, MP, Crit, etc). If so, that might be a good excuse to implement Organisms with multiple Chromosomes, each subject to the same variables, but each trying to reach a single best solution for a single target value, allowing one Chromosome to "seek" the solution for HP, with another being fit for MP. How to indicate that the engine should allow for some Chromosomes to be fit, and others not - and how to generalize it, so that I don't tell it that Solution 1 is for Chromosome 1, etc - I'll need to think about.
+1.0: Profit!
+	By the time we get here - if not sooner, with 0.5 the likely candidate - we should have full implementation of a more or less universal genetic algorithm engine. Perhaps a lot of the "engine" elements will fill 0.6 to 0.9.
+	
+	Somewhere by now, we should have something of an interface (console? GUI? Web???), as well as I/O. We should be able to save (and load) "projects" - equations, criteria, whatever - as well as Organisms, Chromosomes, and entire environments/experiments.
+	
+	Maybe the ability to script or extend implementations. If we don't implement programmatic genetic ability as a core feature, it'd be nice to allow for that possibility somehow (even if I'm the one who extends it in such a manner). It's also possible that extensibility for even  more general purposes would be handy, even overriding otherwise fundamental features - could an extension to represent 4-base DNA be useful, possible, handy?
+	
+	As it occurs to me, perhaps the ability to do things such as evolve combat rotations for WOW (for example) would be another goal to shoot for enabling. Being able to create an experiment with all manner of variables (character stats, equipment, spells, encounter constraints, etc) would be nice (possibly unwieldy for solution… but more generally implemented would be handy for creating setups for, say, each class and spec, just tweaking encounter and item constraints?).
+1.0+: To Infinity (literally?)
+	In the future, it might be nice to generalize beyond equations - perhaps aim for the rotation example. Dunno. At least setups, perhaps.
+	
+	It could be nice to be able to tell the engine what sort of data/variables I want it to use in seeking a solution for a given range of a possible problem - that is, unleash it on a fairly wide open field of inputs, and some possible solutions (hard, as in empirically evidenced, and soft, in this case meaning theoretical but not seen or proven solutions). For example, might it not be nice to have it calculate political campaign odds a la 538? Or make economic observations? I dunno.
+	
+	Could I generalize it to solve problems in number theory? Or to prove problems such as a^2+b^2 = c^?
+	
+	Could be fun.
+
