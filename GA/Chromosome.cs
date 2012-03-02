@@ -12,7 +12,8 @@ namespace GA
 {
     class Chromosome
     {
-        // 
+        // Comments for variables are superfluous at this point.
+        // Defining the variables explicitly is a temporary measure - intention is to dyamically allow variables as needed... likely requiring reflection, or dictionaries.
         private ArrayList genes;
         private static Random r = new Random();
         private bool calculated = false;
@@ -31,6 +32,7 @@ namespace GA
 
         private double fitness = 1E100;
 
+        // For each chromosome, track its parents (if applicable).
         private string parentA = "NaN";
         private string parentB = "NaN";
 
@@ -165,6 +167,13 @@ namespace GA
         //    return Crossover(c, b, 1);
         //}
 
+        /*
+         * Apparently, I very much need to review this code. As noted, my first attempt(s) at making this work properly, er, didn't.
+         * There may still be room for different approaches to crossover, but if I can verify that this one works as I intend,
+         * and that the fossil code doesn't, I can delete it entirely.
+         * 
+         * Not that it can't be optimized.
+         */
         /// <summary>
         /// Takes two parent Chromosomes, and returns a child Chromosome that derives from a crossover of both.
         /// </summary>
@@ -392,6 +401,7 @@ namespace GA
             }
         }
 
+        // Huh?
         public string GeneStringValidated
         {
             get
@@ -462,6 +472,7 @@ namespace GA
                 }
             }
 
+            // For evaluation purposes, we need to specify explicit multiplication: 1X or X1 are not valid C# expressions.
             for (int i = 0; i < s.Length - 1; i++)
             {
                 //Console.ForegroundColor = ConsoleColor.Red;
@@ -497,6 +508,8 @@ namespace GA
                 //Console.WriteLine(s);
                 //Console.ForegroundColor = ConsoleColor.Gray;
             }
+
+            // I'm uncertain if these are penalized at all, or simply ignored. If penalized, it may be through length penalization.
 
             // Trailing operators are ignored.
             if (IsGeneOperator(s[s.Length - 1]))

@@ -9,6 +9,7 @@ namespace GA
 {
     class Program
     {
+        // I believe this is a n out of 10,000 chance... I'll have to review my code, ack.
         private static int mutationChance = 9000; // 2 / 10000
         private static int insertionChance = 9000; // 2 / 10000
         private static int deletionChance = 9900; // 2 / 10000
@@ -16,30 +17,47 @@ namespace GA
 
         //private static double targetValue = 9; //
 
-        private static double bonusValue = 1.66;
-        private static double bonusLength = 1.66;
-        private static double bonusGene = 2;
-        private static double malusGene = 2.5;
-        private static double malusRequiredVariable = 10;
-        private static double bonusValid = 1.66;
-        private static double malusValid = 1.33;
-        private static double malusTimesZero = 10;
-        private static double malusTimesOne = 5;
-        private static double malusLength = 1.66;
-        private static double malusSilence = 2.5;
+        /*
+         * In lieu of an "environment" that would submit equations to pressure and selection, I use bonuses and maluses in awarding fitness.
+         * This is cumbersome and awkward and offends my aesthetic sense, but I'm not sure how to improve upon this at this time.
+         * For the most part, this is not *yet* intended to be an open system, allowing for arbitrary evolution, but rather for very targeted
+         * solutions. So setting a goal isn't a problem - this is guided evolution.
+         * 
+         * How I go about configuring this for open-ended evolution remains to be seen.
+         * 
+         * And the way my mind works, I'm now pondering whether I can provide for evolution of *these values* in order to find an optimized set (or sets)
+         * to find optimal solutions... cf. the evolution of the biological genetic code, heh.
+         * 
+         * Uncertain: how to account/handle situations such as the 7*X*X/7 equation I observed in the last run.
+         */
+        private static double bonusValue = 1.66; // Bonus to fitness relative to accurate value/answer of the equation string.
+        private static double bonusLength = 1.66; // Currently unused. Was an attempt at awarding equations where validated strings were close to their genotype.
+        private static double bonusGene = 2; // Uh. I forget.
+        private static double bonusValid = 1.66; // Well formed equations get a bonus.
+
+        private static double malusGene = 2.5; // I forget. Gotta review code.
+        private static double malusRequiredVariable = 10; // Right now, we stipulate this variable or that. If required variables are not found, penalize the equation. This negates possibility of an equation being fit *but* for the equation... I may change that.
+        private static double malusValid = 1.33; // If the equation is invalid, penalize.
+        private static double malusTimesZero = 10; // We aim for simplicity. Multiplying something by zero is unlikely to be simple (or helpful).
+        private static double malusTimesOne = 5; // As with the *byzero penalty. Penalized less as this is more likely to help (maybe?).
+        private static double malusLength = 1.66; // If a chromosome is too long, penalize. Was relative to genotype, currently relative to an arbitrary value (20 genes).
+        private static double malusSilence = 2.5; // Unused. A variation on penalizing length.
 
         private static Dictionary<string, Dictionary<string, double>> dict = new Dictionary<string, Dictionary<string, double>>();
 
-        private static int numChrom = 8;
+        private static int numChrom = 12;
 
         private static int page = 0;
 
+        // Provide an arbitrary cap on fitness, for simplicity of comparisons, etc.
         private const double maxFitness = 50000;
 
+        // Lists of chromosomes. The latter two record the best chromosomes. The first is the best 8 of this iteration, the second is the best 8 (?) ever.
         private static List<Chromosome> chromosomes;
         private static List<Chromosome> bestChromosomes;
         private static List<Chromosome> bestEverChromosomes;
 
+        // Since we evaluate the best chromosome strings, instead of assigning a null value, assign a value that can be evaluated but will not give us a "good" fitness.
         private static string bestChromosomeString = "NaN";
         private static double bestChromosomeFitness = 0;
 
@@ -51,6 +69,7 @@ namespace GA
         private static string bredChromosomeString = "NaN";
         private static double bredChromosomeFitness = 0;
 
+        // Minimum on minimum fitness. Currently, the lower a fitness, the better. This isn't intuitive, but I didn't get to defining a better range.
         private static double minFitness = 0.001;
 
         private static Dictionary<string, int> genome = new Dictionary<string, int>();
@@ -77,6 +96,7 @@ namespace GA
             c.FitnessBonus = 1;
             c.Fitness = 0;
 
+            // I forget why I comment out trying to get other variables.
             foreach (KeyValuePair<string, Dictionary<string, double>> kvp in dict)
             {
                 double r, s, u, v, w, x, y, z;
@@ -191,6 +211,7 @@ namespace GA
                 char[] vars2 = { 'R', 'S', 'T', 'U', 'V', 'W', 'Y', 'Z' };
                 //List<char> varsAllList = new List<char>();
 
+                // Penalize 0X, X0, 1X, and X1.
                 foreach (char ch in "RSTUVWXYZ")
                 {
                     if (c.GeneString.Contains("0" + ch) || c.GeneString.Contains(ch + "0"))
@@ -204,14 +225,19 @@ namespace GA
 
                 foreach (char ch in "RSTUVWXYZ")
                 {
-                    if (c.GeneString.Contains("1" + ch) || c.GeneString.Contains(ch + "1"))
+                    if (
+                            c.GeneString.Contains("1" + ch) || c.GeneString.Contains(ch + "1") ||
+                            c.GeneString.Contains("1*" + ch) || c.GeneString.Contains(ch + "*1") ||
+                            c.GeneString.Contains(ch + "/1")
+                        )
                     {
                         if (explain) Console.WriteLine(ch + "*One Penalty");
-                        tFitness *= malusTimesZero;
-                        c.FitnessBonus *= malusTimesZero;
+                        tFitness *= malusTimesOne;
+                        c.FitnessBonus *= malusTimesOne;
                     }
                 }
 
+                // I don't recall why I penalize this.
                 foreach (char ch1 in "RSTUVWYZ")
                 {
                     foreach (char ch2 in "RSTUVWXYZ")
@@ -311,6 +337,7 @@ namespace GA
 
             Chromosome c;
 
+            // Testing/debugging code I haven't bothered taking out yet.
             //Chromosome b;
             //c = chromosomes[0];
             //b = chromosomes[1];
@@ -328,6 +355,8 @@ namespace GA
 
             DisplayAll(chromosomes, index, index2, t);
 
+            // TODO: Add help. Rework some displays.
+            // For that matter, it's probably time to move this to a GUI.
             while (!quit)
             {
                 if (Console.KeyAvailable)
@@ -464,6 +493,7 @@ namespace GA
                                 DisplayBestChromosomes();
                                 changed = true;
                             }
+                            // I believe I put a limit of three as otherwise equations, under some parameters, would rapidly shrink in size... that may only be a consequence of certain ways of awarding/penalizing length.
                             else if (chromosomes[index].Genes.Count > 3)
                             {
                                 chromosomes[index].Delete();
@@ -473,6 +503,7 @@ namespace GA
                         case ConsoleKey.P:
                             paused = !paused;
                             break;
+                        // Randomly modify the chromosome. Or "DisplayOdds", which currently doesn't work in-program?
                         case ConsoleKey.R:
                             if ((cki.Modifiers & ConsoleModifiers.Shift) != 0)
                             {
@@ -541,7 +572,6 @@ namespace GA
                     DisplayAll(chromosomes, index, index2, t);
                 }
             }
-
         }
 
         private static void DoShowBestChromosomes()
@@ -558,10 +588,17 @@ namespace GA
             Console.ReadLine();
         }
 
+        // For now, statically, manually, setup cases for evolution.
+        // While the latter cases may seem trivial, what good is an evolutionary algorithm engine that can't evolve an equation for squaring?
+        // Any equations more complex than those samples would require that already (ideally) perfect engine.
+        // In particular, this is meant to be able to solve (possibly very complex) equations without knowing those equations ahead of time, but that's just one intention.
         private static void DoSetupCases()
         {
             Dictionary<string, double> d;
 
+            // These five are examples of collected data in a game that are meant to be tried against evolved equations.
+            // Without having rounded out the engine, it... doesn't do what I want it to.
+            // More so, though, I don't yet have support for defining cases, etc.
             //d = new Dictionary<string, double>();
             //d.Add("V", 2); // Bonus Multiplier
             //d.Add("W", 30); // Resource Value
@@ -617,6 +654,7 @@ namespace GA
             //d.Add("U", 5); // Efficiency - Desired Value/Target Score
             //dict.Add("Case 4", d);
 
+            // Evolve an equation such that it evaluates to the square of our single variable... ie, X**2 or X*X.
             for (int x = -10; x < 11; x++)
             {
                 if (x != 0)
@@ -628,7 +666,9 @@ namespace GA
                 }
             }
 
+            // This case, of course, is simply coming up with the product of two variables.
             // Will need to look into parsing... this resulted in a string of 7/5*Y*X being correct - because of integer division.
+            // I really don't want to have to force numbers, or variables, to floats/doubles...
             //for (int x = -3; x <= 3; x++)
             //{
             //    for (int y = -3; y <= 3; y++)
@@ -660,6 +700,7 @@ namespace GA
             Console.ReadLine();
         }
 
+        // Apparently I don't remember what this does!
         private static void DisplayOdds()
         {
             int t = 0;
@@ -737,11 +778,13 @@ namespace GA
                 c = c3[j];
                 b = c3[k];
 
+                // Crossover at a given index is currently disabled - without proper handling for lenghts, it rapidly selected for the shortest possible chromosomes.
                 //Chromosome a = Chromosome.Crossover(c, b, 3);
                 List<Chromosome> children;
 
                 children = Chromosome.Crossover(c, b);
 
+                // Currently, we force chromosomes to be minimally three genes in length. To do so, we randomly insert a gene into shorter chromosomes.
                 while (children[0].Genes.Count < 3)
                 {
                     children[0].Insert();
@@ -752,6 +795,8 @@ namespace GA
                     children[1].Insert();
                 }
 
+                // Take the child chromosomes. Record them in(to) the genome.
+                // Then apply the possibility of mutations - flat mutation, insertion, deletion, or swaps.
                 foreach (Chromosome a in children)
                 {
                     if (genome.TryGetValue(a.GeneString, out v))
@@ -829,6 +874,9 @@ namespace GA
             Console.ReadLine();
         }
 
+        // Haha.
+        // Currently, chromosomes compete in the sense that we favor fitter equations for generation.
+        // So it's sort of random... within the bounds of fit(ter) equations. If we can't find decently fit equatons, we expand our search.
         private static int GetSortOfRandomChromosomeIndex(List<Chromosome> c)
         {
             int t = 0;
@@ -861,6 +909,7 @@ namespace GA
             }
         }
 
+        // Display a bunch of data that even confuses me. :3
         static void DisplayAll(List<Chromosome> c, int idx, int idx2, int t)
         {
             Console.SetCursorPosition(0, 0);
@@ -870,6 +919,7 @@ namespace GA
             Console.WriteLine("Best: " + bestChromosomeString + " " + bestChromosomeFitness);
             Console.WriteLine("Most Bred: " + bredChromosomeString + " " + bredChromosomeFitness);
             DisplayChromosomes(c, idx, idx2);
+
             if (solution)
             {
                 Console.ForegroundColor = ConsoleColor.Magenta;

@@ -6,6 +6,8 @@ using System.Text;
 /*
  * I'm not currently implementing variables and constants. Variables are the harder one. We'll get to it. [26 June 2011]
  * 
+ * So, huh. I'm not sure when this was written compared to the currently existing code, but I have variables implemented. Unless I'm confusing myself. [3 March 2012]
+ * 
  * To Do:
  *      Meta:
  *          Full comments.
@@ -112,6 +114,7 @@ namespace GA
             }
         }
 
+        // In gene strings, "@" is a null character that's stripped in the end.
         public string GeneString
         {
             get
